@@ -1,0 +1,69 @@
+version: '3.7'
+
+services:
+  api:
+    container_name: ${PROJECT_NAME}-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - IMAGE_VERSION=2.0.0-npm
+    image: ${PROJECT_NAME}/php
+    working_dir: /var/www/html
+    restart: unless-stopped
+    tty: true
+    env_file:
+      - ./.env
+    ports:
+      - ${DOCKER_API_PORT_HTTP}:${API_PORT_HTTP}
+    volumes:
+      - ./:/var/www/html
+    networks:
+      - network-backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://api:80"]
+      interval: 5s
+      timeout: 1m
+      retries: 10
+      start_period: 10s
+    depends_on:
+      database:
+        condition: service_healthy
+
+  database:
+    container_name: ${PROJECT_NAME}-db
+    image: mysql:8.0.27
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+    environment: 
+      - MYSQL_DATABASE
+      - MYSQL_USER
+      - MYSQL_PASSWORD
+      - MYSQL_ROOT_PASSWORD
+    ports:
+      - ${MYSQL_PORT}:3306
+    networks:
+      - network-backend
+    healthcheck:
+      test: "mysqladmin ping -h 127.0.0.1 -u ${MYSQL_USER} --password=${MYSQL_PASSWORD}"
+      interval: 5s
+      retries: 50
+      start_period: 2m30s
+
+  phpmyadmin:
+    container_name: ${PROJECT_NAME}_phpmyadmin
+    image: phpmyadmin:latest
+    restart: always
+    environment:
+      - PMA_HOST
+      - PMA_PORT
+      - PMA_ARBITRARY
+    ports:
+      - ${DOCKER_PHPMYADMIN_PORT}:${PHPMYADMIN_PORT}
+    depends_on:
+      database:
+        condition: service_healthy
+
+networks:
+  network-backend:
+    driver: bridge

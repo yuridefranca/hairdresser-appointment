@@ -1,0 +1,176 @@
+<?php
+
+namespace {{ namespace }};
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\{{ apiVersion }}\{{ modelClassName }}\{{ modelClassName }}DestroyRequest;
+use App\Http\Requests\Api\{{ apiVersion }}\{{ modelClassName }}\{{ modelClassName }}IndexRequest;
+use App\Http\Requests\Api\{{ apiVersion }}\{{ modelClassName }}\{{ modelClassName }}ShowRequest;
+use App\Http\Requests\Api\{{ apiVersion }}\{{ modelClassName }}\{{ modelClassName }}StoreRequest;
+use App\Http\Requests\Api\{{ apiVersion }}\{{ modelClassName }}\{{ modelClassName }}UpdateRequest;
+use App\Http\Resources\Api\{{ apiVersion }}\{{ modelClassName }}Resource;
+use App\Services\Interfaces\{{ apiVersion }}\{{ modelClassName }}ServiceInterface;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Log;
+
+class {{ modelClassName }}Controller extends Controller
+{
+    /**
+     * @var \App\Services\Interfaces\{{ modelClassName }}ServiceInterface ${{ resourceName }}Service
+     */
+    private ${{ resourceName }}Service;
+
+    /**
+     * Create a new controller instance.
+     *
+     * @param  App\Services\Interfaces\{{ apiVersion }}\{{ modelClassName }}ServiceInterface ${{ resourceName }}Service
+     * @return void
+     */
+    public function __construct({{ modelClassName }}ServiceInterface ${{ resourceName }}Service)
+    {
+        $this->{{ resourceName }}Service = ${{ resourceName }}Service;
+    }
+
+    /**
+     * Display a listing of the resource.
+     *
+     * @param  \App\Http\Requests\Api\{{ apiVersion }}\{{ modelClassName }}\{{ modelClassName }}IndexRequest $request
+     * @return \Illuminate\Http\Response
+     */
+    public function index({{ modelClassName }}IndexRequest $request)
+    {
+        Log::info(__CLASS__ . ' ' . __FUNCTION__ . ' called');
+        try {
+            extract($request->validated());
+            ${{ resourceName }}s = $this->{{ resourceName }}Service->list(page: $page, perPage: $perPage, order: $order, orderBy: $orderBy, relations: $relations);
+
+            return response()->json([
+                'success'   => true,
+                'data'      => {{ modelClassName }}Resource::collection(${{ resourceName }}s),
+                'paging'    => [
+                    'current'   => ${{ resourceName }}s->url($page),
+                    'first'     => ${{ resourceName }}s->url(1),
+                    'last'      => ${{ resourceName }}s->url(${{ resourceName }}s->lastPage()),
+                    'previous'  => ${{ resourceName }}s->previousPageUrl(),
+                    'next'      => ${{ resourceName }}s->nextPageUrl(),
+                    'total'     => ${{ resourceName }}s->total(),
+                ],
+            ], 200);
+        } catch (\Throwable $th) {
+            Log::error(__CLASS__ . ' ' . __FUNCTION__ . ' ' . $th->getMessage(), ['error' => $th]);
+            return response()->json([
+                'success'   => false,
+                'message'   => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \App\Http\Requests\Api\{{ apiVersion }}\{{ modelClassName }}\{{ modelClassName }}StoreRequest $request
+     * @return \Illuminate\Http\Response
+     */
+    public function store({{ modelClassName }}StoreRequest $request)
+    {
+        Log::info(__CLASS__ . ' ' . __FUNCTION__ . ' called');
+        try {
+            ${{ resourceName }} = $this->{{ resourceName }}Service->create($request->validated());
+            return response()->json([
+                'success'   => true,
+                'data'      => new {{ modelClassName }}Resource(${{ resourceName }}),
+            ], 201);
+        } catch (\Throwable $th) {
+            Log::error(__CLASS__ . ' ' . __FUNCTION__ . ' ' . $th->getMessage(), ['error' => $th]);
+            return response()->json([
+                'success'   => false,
+                'message'   => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  \App\Http\Requests\Api\{{ apiVersion }}\{{ modelClassName }}\{{ modelClassName }}ShowRequest  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function show({{ modelClassName }}ShowRequest $request, $id)
+    {
+        Log::info(__CLASS__ . ' ' . __FUNCTION__ . ' called');
+        try {
+            ${{ resourceName }} = $this->{{ resourceName }}Service->getById($id);
+            return response()->json([
+                'success'   => true,
+                'data'      => new {{ modelClassName }}Resource(${{ resourceName }}),
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            Log::error($e->getMessage());
+            return response()->json(['message' => $e->getMessage()], 404);
+        } catch (\Throwable $th) {
+            Log::error(__CLASS__ . ' ' . __FUNCTION__ . ' ' . $th->getMessage(), ['error' => $th]);
+            return response()->json([
+                'success'   => false,
+                'message'   => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  \App\Http\Requests\Api\{{ apiVersion }}\{{ modelClassName }}\{{ modelClassName }}UpdateRequest  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function update({{ modelClassName }}UpdateRequest $request, $id)
+    {
+        Log::info(__CLASS__ . ' ' . __FUNCTION__ . ' called');
+        try {
+            $this->{{ resourceName }}Service->update($id, $request->validated());
+            ${{ resourceName }} = $this->{{ resourceName }}Service->getById($id);
+            return response()->json([
+                'success'   => true,
+                'data'      => new {{ modelClassName }}Resource(${{ resourceName }})
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            Log::error($e->getMessage());
+            return response()->json(['message' => $e->getMessage()], 404);
+        } catch (\Throwable $th) {
+            Log::error(__CLASS__ . ' ' . __FUNCTION__ . ' ' . $th->getMessage(), ['error' => $th]);
+            return response()->json([
+                'success'   => false,
+                'message'   => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  \App\Http\Requests\Api\{{ apiVersion }}\{{ modelClassName }}\{{ modelClassName }}DestroyRequest  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy({{ modelClassName }}DestroyRequest $request, $id)
+    {
+        Log::info(__CLASS__ . ' ' . __FUNCTION__ . ' called');
+        try {
+            $this->{{ resourceName }}Service->destroy($id);
+            return response()->json([
+                'success'   => true,
+                'data'      => null
+            ], 204);
+        } catch (ModelNotFoundException $e) {
+            Log::error($e->getMessage());
+            return response()->json(['message' => $e->getMessage()], 404);
+        } catch (\Throwable $th) {
+            Log::error(__CLASS__ . ' ' . __FUNCTION__ . ' ' . $th->getMessage(), ['error' => $th]);
+            return response()->json([
+                'success'   => false,
+                'message'   => $th->getMessage()
+            ], 500);
+        }
+    }
+}

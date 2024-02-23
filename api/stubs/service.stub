@@ -1,0 +1,29 @@
+<?php
+
+namespace {{ namespace }};
+
+use App\Repositories\Interfaces\{{ apiVersion }}\{{ repositoryInterfaceName }};
+use App\Services\BaseService;
+use App\Services\Interfaces\{{ apiVersion }}\{{ className }}Interface;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
+
+class {{ className }} extends BaseService implements {{ className }}Interface
+{
+    /**
+     * @var \App\Repositories\Interfaces\{{ apiVersion }}\{{ repositoryInterfaceName }} $repository
+     */
+    protected $repository;
+
+    /**
+     * Instantiate a new CompanyService instance.
+     *
+     * @param \App\Repositories\Interfaces\{{ apiVersion }}\{{ repositoryInterfaceName }} $repository
+     */
+    public function __construct({{ repositoryInterfaceName }} $repository)
+    {
+        parent::__construct($repository);
+        $this->repository = $repository;
+    }
+}
